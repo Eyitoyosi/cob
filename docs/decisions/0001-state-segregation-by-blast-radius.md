@@ -1,8 +1,5 @@
 # 1. Segregate Terraform state by blast radius, not just by team
 
-## Status
-Accepted
-
 ## Context
 A single shared state file means any team's apply can affect another
 team's resources, and one held lock blocks everyone. Per-team AWS

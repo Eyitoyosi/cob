@@ -1,8 +1,5 @@
 # 5. Split each environment into a foundation layer and per-team root modules
 
-## Status
-Accepted
-
 ## Context
 Some infrastructure is shared by construction — a VPC and an ECS
 cluster only need to exist once per environment, and every team's

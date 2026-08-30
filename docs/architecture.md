@@ -18,29 +18,52 @@ and infrastructure changes that were hard to track. COB exists to move the
 organization from *"Platform Engineering builds this for us"* to
 *"we provision this ourselves, on the company's standard platform."*
 
-## Diagram
+## Diagrams
 
-<!-- PLACEHOLDER: insert the architecture diagram here, e.g.
-     ![COB platform architecture](./diagrams/cob-architecture.svg)
-     Source diagram (consumers → COB platform → AWS accounts, with
-     foundation and capability module layers) was reviewed earlier in
-     this project's design discussion. Export it as SVG/PNG into
-     docs/diagrams/ and update the path above. -->
+Two diagrams are included, at different zoom levels, because one diagram
+trying to do both jobs ends up too abstract to verify against the code or
+too cluttered to explain to someone new. Read them in this order.
 
-The diagram shows three layers:
+### 1. Platform overview
 
-1. **Consumers** — Application Engineering, Data Engineering, and Analytics
-   Engineering, each calling COB modules from their own environment
-   directory.
-2. **COB platform**, split into:
-   - **Foundation layer** — `networking` and `iam`, consumed internally by
-     every other module and rarely called directly by application teams.
-   - **Capability layer** — `storage-s3`, `compute-ec2`, `compute-ecs-*`,
-     `database-rds`, and `data-platform`, called directly by teams and
-     internally composing the foundation layer (and, in `data-platform`'s
-     case, `storage-s3` itself).
-3. **AWS accounts** — a `dev` and a `prod` environment, provisioned from the
-   same module source, differing only in `.tfvars` values.
+![COB platform architecture](./diagrams/cob_simple_high_level_diagram.png)
+
+This is the "what is COB, at a glance" view: engineering teams call the
+COB platform, which provisions infrastructure into an AWS account. It
+shows the platform's two internal layers —
+**foundation modules** (`networking`, `iam`), consumed internally by
+every other module and rarely called directly by a team, and
+**capability modules** (`storage-s3`, `compute-ec2`, `compute-ecs-*`,
+`database-rds`, `data-platform`), called directly by teams and composed
+on top of the foundation layer. Use this diagram when explaining COB to
+someone who has never seen it before, or when deciding which layer a new
+module belongs in.
+
+### 2. Example stack, detailed
+
+![COB example stack architecture](./diagrams/cob_example_stack_white_bg_styled.png)
+
+This is the "what actually gets built" view — the real resource
+topology produced by `examples/web-app-with-database/`, one instance of
+a team composing COB's capabilities. It shows:
+
+- Traffic path: `INTERNET` → `INTERNET_GATEWAY` → `VPC`.
+- Three subnet tiers inside the VPC: `PUBLIC_SUBNET` (NAT egress only —
+  there is no internet-facing compute yet, see Known Limitations),
+  `PRIVATE_SUBNET` (the `ECS_SERVICE` and its security group), and
+  `DATABASE_SUBNET` (`RDS_POSTGRESQL` and its security group).
+- The horizontal arrow between `ECS_SECURITY_GROUP` and
+  `DB_SECURITY_GROUP` represents a security-group *reference*, not a
+  network path — this is the mechanism from
+  `0002-database-access-via-security-groups.md`: the database only
+  trusts traffic from that specific security group, never a CIDR range.
+- `S3_BUCKET`, `SECRETS_MANAGER`, and `IAM_TASK_ROLE` sit outside the
+  VPC boundary because they're account-level services the ECS task
+  reaches via AWS APIs, not network routing.
+
+Use this diagram when reviewing or defending a specific security
+decision, or when onboarding someone who needs to actually trace how a
+request reaches the database.
 
 ## Platform capabilities
 
@@ -75,7 +98,8 @@ key, which:
    those foundation outputs in as inputs.
 
 See `examples/web-app-with-database/` for a self-contained, runnable
-reference that composes five capabilities into one realistic stack.
+reference that composes five capabilities into one realistic stack — the
+same stack shown in the detailed diagram above.
 
 ## Environments
 
@@ -134,7 +158,9 @@ Full reasoning in `docs/decisions/0001-state-segregation-by-blast-radius.md`.
 - No IAM permissions boundary yet — planned once more teams are calling
   the `iam` module.
 - No load balancer / ALB module yet; `compute-ecs-service` and
-  `compute-ec2` are reachable within the VPC only.
+  `compute-ec2` are reachable within the VPC only. This is why the
+  detailed diagram's public subnet has no internet-facing compute — NAT
+  egress only, for now.
 - No Lake Formation column/row-level access control in `data-platform` —
   current access boundary is table-level via Glue/Athena permissions.
 
@@ -147,6 +173,5 @@ Recorded individually, with context and consequences, in
 - `0002-database-access-via-security-groups.md`
 - `0003-separate-workload-and-human-iam-modules.md`
 - `0004-fargate-over-ec2-backed-ecs.md`
-- `0005-foundation-and-teams-enviromoent-split.md`
+- `0005-foundation-and-teams-environment-split.md`
 - `0006-separate-ecs-execution-and-task-roles.md`
-

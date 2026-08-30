@@ -1,8 +1,5 @@
 # 2. Database ingress is security-group-based, never CIDR-based
 
-## Status
-Accepted
-
 ## Context
 CIDR-based ingress rules only restrict *where* traffic originates
 network-wise; anything in that range can connect. For a database,

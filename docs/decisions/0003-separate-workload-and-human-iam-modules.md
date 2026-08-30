@@ -1,8 +1,5 @@
 # 3. Separate workload identity from human access into two IAM modules
 
-## Status
-Accepted
-
 ## Context
 "IAM" covers two problems that look similar on the surface — both end in
 a role or user with a policy attached — but differ in almost every

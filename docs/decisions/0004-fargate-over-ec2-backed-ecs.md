@@ -1,8 +1,5 @@
 # 4. Use Fargate, not EC2-backed ECS, for compute-ecs-*
 
-## Status
-Accepted
-
 ## Context
 ECS supports two launch types. EC2-backed ECS runs tasks on a fleet of
 EC2 instances that the account owner manages directly — patching,
