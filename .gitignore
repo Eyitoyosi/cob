@@ -3,4 +3,4 @@
 *.tfstate.backup
 *.tfvars
 !*.tfvars.example
-.terraform.lock.hcl
+.terraform.lock.hcl*:Zone.Identifier
