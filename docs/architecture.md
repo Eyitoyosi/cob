@@ -84,12 +84,35 @@ individual AWS resource types — see `docs/decisions/` for the reasoning
 behind each split (e.g. why workload IAM and human IAM are separate
 modules, why ECS cluster and ECS service are separate modules).
 
+## Repositories and versioning
+
+COB is split across two repositories:
+
+| Repository | Contains | Role |
+|---|---|---|
+| `cob` | `modules/`, `docs/`, `examples/` | The platform. Released by Git tag. |
+| `cob-live` | `bootstrap/`, `environments/` | The consumers. Each module call pins a released version. |
+
+Every module call in `cob-live` references a tagged release:
+
+```hcl
+source = "git::https://github.com/<org>/cob.git//modules/networking?ref=v0.1.0"
+```
+
+This makes a module change a deliberate, reviewable release rather than an
+edit that silently affects every environment. A new version is adopted in
+dev first, and prod moves only when its `ref` is changed. Rollback is
+changing the `ref` back. `terraform init` is still required; it downloads
+the pinned snapshot into `.terraform/modules/`.
+
+Reasoning and trade-offs in
+`docs/decisions/0007-consume-modules-via-versioned-git-tags.md`.
+
 ## How modules are consumed
 
-Application, Data, and Analytics Engineering never call `modules/*`
-directly against production state. Each team has its own root module under
-`environments/{dev,prod}/teams/<team-name>/`, with its own Terraform state
-key, which:
+Each team has its own root module under
+`environments/{dev,prod}/teams/<team-name>/` in `cob-live`, with its own
+Terraform state key, which:
 
 1. Reads the shared foundation's outputs (`vpc_id`, `private_subnet_ids`,
    `ecs_cluster_arn`, etc.) via `terraform_remote_state` — read-only, no
@@ -97,9 +120,11 @@ key, which:
 2. Calls whichever capability modules the team's workload needs, passing
    those foundation outputs in as inputs.
 
-See `examples/web-app-with-database/` for a self-contained, runnable
-reference that composes five capabilities into one realistic stack — the
-same stack shown in the detailed diagram above.
+See `examples/web-app-with-database/` in `cob` for a self-contained,
+runnable reference that composes five capabilities into one realistic stack
+— the same stack shown in the detailed diagram above. Unlike `cob-live`,
+examples use relative module paths on purpose, so an example always
+exercises the code in the same commit.
 
 ## Environments
 
@@ -113,7 +138,8 @@ difference.
 
 ## State architecture
 
-State is segregated by blast radius, not just by team:
+State is segregated by blast radius, not just by team. The code that owns
+state (`bootstrap/` and `environments/`) lives in the `cob-live` repository:
 
 - One shared S3 bucket + one DynamoDB lock table (created once via
   `bootstrap/`, the one place local state is intentional).
@@ -175,3 +201,4 @@ Recorded individually, with context and consequences, in
 - `0004-fargate-over-ec2-backed-ecs.md`
 - `0005-foundation-and-teams-environment-split.md`
 - `0006-separate-ecs-execution-and-task-roles.md`
+- `0007-consume-modules-via-versioned-git-tags.md`
