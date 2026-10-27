@@ -18,8 +18,8 @@ variable "trusted_service" {
   description = "AWS service principal allowed to assume this role"
 
   validation {
-    condition     = contains(["ec2.amazonaws.com", "ecs-tasks.amazonaws.com"], var.trusted_service)
-    error_message = "trusted_service must be one of the supported principals: ec2.amazonaws.com, ecs-tasks.amazonaws.com."
+    condition     = contains(["ec2.amazonaws.com", "ecs-tasks.amazonaws.com", "glue.amazonaws.com"], var.trusted_service)
+    error_message = "trusted_service must be one of the supported principals: ec2.amazonaws.com, ecs-tasks.amazonaws.com, glue.amazonaws.com."
   }
 }
 
