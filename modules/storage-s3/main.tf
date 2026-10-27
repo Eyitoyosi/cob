@@ -54,6 +54,8 @@ resource "aws_s3_bucket_lifecycle_configuration" "this" {
     id     = "cob-lifecycle"
     status = "Enabled"
 
+    filter {}
+
     dynamic "expiration" {
       for_each = var.lifecycle_expiration_days != null ? [1] : []
       content {
@@ -100,4 +102,8 @@ data "aws_iam_policy_document" "enforce_tls" {
 resource "aws_s3_bucket_policy" "this" {
   bucket = aws_s3_bucket.this.id
   policy = data.aws_iam_policy_document.enforce_tls.json
+
+  # S3 can reject a policy and a public-access block applied at the same
+  # moment, so apply them one after the other.
+  depends_on = [aws_s3_bucket_public_access_block.this]
 }
